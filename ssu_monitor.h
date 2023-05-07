@@ -18,6 +18,7 @@
 
 char curPATH[PATHMAX];
 char homePATH[PATHMAX];
+char monitor_list_path[PATHMAX];
 
 char *commanddata[10] = {
 	"add",
@@ -45,3 +46,5 @@ char *QuoteCheck(char **str, char del);
 char *Tokenize(char *str, char *del);
 char **GetSubstring(char *str, int *cnt, char *del);
 int ConvertPath(char *origin, char *resolved);
+void append_line(char *path, char *str);
+int find_pattern(char *path, char *pattern);

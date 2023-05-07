@@ -33,7 +33,7 @@ char *QuoteCheck(char **str, char del) {
 	}
 }
 
-void create_daemon() {
+void create_daemon(char *path, char *log_path, int sleep_time) {
 	pid_t pid;
 	int fd, maxfd;
 
@@ -50,8 +50,16 @@ void create_daemon() {
 	dup(0);
 	dup(0);
 
+	/*
+	   while (1) {
+
+
+	   sleep(sleep_time);
+	   }*/
+
+	append_line(log_path, "from daemon hello\n");
+
 	exit(0);
-	// while (1);
 }
 
 // Util
@@ -201,7 +209,6 @@ void init() {
 	getcwd(curPATH, PATHMAX);
 	sprintf(homePATH, "%s", getenv("HOME"));
 
-	char monitor_list_path[PATHMAX];
 	if (snprintf(monitor_list_path, sizeof(monitor_list_path), "%s/%s", curPATH, "monitor_list.txt") > sizeof(monitor_list_path)) {
 		fprintf(stderr, "snprintf error\n");
 		exit(1);
@@ -218,6 +225,7 @@ void init() {
 
 // args[0] : path
 // args[1] : -t
+// args[2] : time
 void add(char **args) {
 	int tOption = false;
 	int sleep_time = 1;
@@ -263,6 +271,12 @@ void add(char **args) {
 		}
 	}
 
+	int find = find_pattern(monitor_list_path, path);
+	if (find == 1) {
+		fprintf(stderr, "%s cannot be monitored\n", path);
+		return;
+	}
+
 	// create path/log.txt
 	char log_path[PATHMAX];
 	if (snprintf(log_path, sizeof(log_path), "%s/%s", path, "log.txt") > sizeof(log_path)) {
@@ -284,7 +298,14 @@ void add(char **args) {
 	if ((daemon_pid = fork()) < 0) {
 		fprintf(stderr, "fork error\n");
 	} else if (daemon_pid == 0) {
-		create_daemon();
+		create_daemon(path, log_path, sleep_time);
+	} else {
+		char tmp[PATHMAX];
+		if (snprintf(tmp, sizeof(tmp), "%s %d\n", path, daemon_pid) > sizeof(tmp)) {
+			fprintf(stderr, "tmp over PATHMAX\n");
+			return;
+		}
+			append_line(monitor_list_path, tmp);
 	}
 
 }
@@ -296,3 +317,34 @@ void help() {
 	printf("help\n");
 }
 
+void append_line(char *path, char *str) {
+	FILE *fp;
+
+	if ((fp = fopen(path, "a+")) == NULL) {
+		fprintf(stderr, "fopen error for %s\n", path);
+		exit(1);
+	}
+
+	fprintf(fp, "%s", str);
+	fclose(fp);
+}
+
+int find_pattern(char *path, char *pattern) {
+	FILE *fp;
+
+	if ((fp = fopen(path, "a+")) == NULL) {
+		fprintf(stderr, "fopen error for %s\n", path);
+		exit(1);
+	}
+
+	char line[STRMAX];
+	while (fgets(line, STRMAX, fp) != NULL) {
+		if (strstr(line, pattern) != NULL) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+void delete_line(char *path, char *pattern) {
+}
