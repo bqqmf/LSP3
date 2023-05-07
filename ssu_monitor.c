@@ -190,7 +190,11 @@ void prompt() {
 			}
 			add(arglist+1);
 		} else if (!strcmp(arglist[0], commanddata[1])) {
-			// delete
+			if (argcnt < 2) {
+				help();
+				continue;
+			}
+			delete(arglist[1]);
 		} else if (!strcmp(arglist[0], commanddata[2])) {
 			// tree 
 		} else if (!strcmp(arglist[0], commanddata[3])) {
@@ -310,6 +314,18 @@ void add(char **args) {
 
 }
 
+void delete(char *pid) {
+	int find = find_pattern(monitor_list_path, pid);
+
+	if (find == 1) {
+		delete_line(monitor_list_path, pid);
+	}
+	else {
+		fprintf(stderr, "%s not exists in %s\n", pid, "monitor_list_path");
+		return;
+	}
+}
+
 void add_usage() {
 	printf("add <DIRPATH> [OPTION] <TIME>\n");
 }
@@ -347,4 +363,28 @@ int find_pattern(char *path, char *pattern) {
 }
 
 void delete_line(char *path, char *pattern) {
+	FILE *fp, *fp_tmp;
+
+	if ((fp = fopen(path, "a+")) == NULL) {
+		fprintf(stderr, "fopen error for %s\n", path);
+		exit(1);
+	}
+	if ((fp_tmp = fopen("tmpfile", "a+")) == NULL) {
+		fprintf(stderr, "fopen error for %s\n", "tmpfile");
+		exit(1);
+	}
+
+	char line[STRMAX];
+	while (fgets(line, STRMAX, fp) != NULL) {
+		if (strstr(line, pattern) != NULL) {
+			continue;
+		}
+		fprintf(fp_tmp, "%s", line);
+	}
+
+	fclose(fp_tmp);
+	fclose(fp);
+
+	remove(path);
+	rename("tmpfile", path);
 }

@@ -36,6 +36,7 @@ typedef struct command_parameter {
 void init();
 void prompt();
 void add();
+void delete();
 void add_usage();
 
 void help();
@@ -48,3 +49,4 @@ char **GetSubstring(char *str, int *cnt, char *del);
 int ConvertPath(char *origin, char *resolved);
 void append_line(char *path, char *str);
 int find_pattern(char *path, char *pattern);
+void delete_line(char *path, char *pattern);
