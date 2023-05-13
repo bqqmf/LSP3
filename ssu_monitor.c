@@ -165,6 +165,40 @@ int ConvertPath(char* origin, char* resolved) {
 	return 0;
 }
 
+int isIncludePath(char *path1, char *path2) {
+	int i;
+	int cnt1, cnt2;
+	char tmp1[PATHMAX], tmp2[PATHMAX];
+	strcpy(tmp1, path1);
+	strcpy(tmp2, path2);
+	char **pathlist1 = GetSubstring(tmp1, &cnt1, "/");
+	char **pathlist2 = GetSubstring(tmp2, &cnt2, "/");
+
+
+	if(cnt1==cnt2) {
+		for(i = 0; i < cnt1; i++) {
+			if(!strcmp(pathlist1[i], pathlist2[i]))
+				continue;
+			return 0;
+		}
+		return 1;
+	} else if (cnt1 > cnt2) {
+		for(i = 0; i < cnt2; i++) {
+			if(!strcmp(pathlist1[i], pathlist2[i]))
+				continue;
+			return 0;
+		}
+		return 1;
+	} else {
+		for(i = 0; i < cnt1; i++) {
+			if(!strcmp(pathlist1[i], pathlist2[i]))
+				continue;
+			return 0;
+		}
+		return 1;
+	}
+}
+
 // ssu_monitor 관련 함수
 void prompt() {
 	char input[STRMAX];
@@ -309,7 +343,7 @@ void add(char **args) {
 			fprintf(stderr, "tmp over PATHMAX\n");
 			return;
 		}
-			append_line(monitor_list_path, tmp);
+		append_line(monitor_list_path, tmp);
 	}
 
 }

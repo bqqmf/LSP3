@@ -47,6 +47,9 @@ char *QuoteCheck(char **str, char del);
 char *Tokenize(char *str, char *del);
 char **GetSubstring(char *str, int *cnt, char *del);
 int ConvertPath(char *origin, char *resolved);
+int isIncludePath(char *path1, char *path2);
+
+
 void append_line(char *path, char *str);
 int find_pattern(char *path, char *pattern);
 void delete_line(char *path, char *pattern);
