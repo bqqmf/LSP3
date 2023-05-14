@@ -165,7 +165,10 @@ int ConvertPath(char* origin, char* resolved) {
 	return 0;
 }
 
-int isIncludePath(char *path1, char *path2) {
+/* find_path()에서 호출됨 */
+/* path1과 path2가 서로 포함하는지 검사 */
+/* return 1 : 포함, 0 : 미포함 */
+int is_include_path(char *path1, char *path2) {
 	int i;
 	int cnt1, cnt2;
 	char tmp1[PATHMAX], tmp2[PATHMAX];
@@ -222,7 +225,7 @@ void prompt() {
 				help();
 				continue;
 			}
-			add(arglist+1);
+			add(argcnt, arglist+1);
 		} else if (!strcmp(arglist[0], commanddata[1])) {
 			if (argcnt < 2) {
 				help();
@@ -230,7 +233,11 @@ void prompt() {
 			}
 			delete(arglist[1]);
 		} else if (!strcmp(arglist[0], commanddata[2])) {
-			// tree 
+			if (argcnt != 2) {
+				help();
+				continue;
+			}
+			tree(arglist + 1);
 		} else if (!strcmp(arglist[0], commanddata[3])) {
 			// help 
 		} else if (!strcmp(arglist[0], commanddata[4])) {
@@ -264,7 +271,7 @@ void init() {
 // args[0] : path
 // args[1] : -t
 // args[2] : time
-void add(char **args) {
+void add(int argc, char **args) {
 	int tOption = false;
 	int sleep_time = 1;
 	struct stat sb;
@@ -290,26 +297,25 @@ void add(char **args) {
 		return;
 	}
 
-	// exception 3 later
-
-	if (args[1] != NULL && !strcmp(args[1], "-t"))
+	if (argc > 2 && args[1] != NULL && !strcmp(args[1], "-t"))
 		tOption = true;
 
 	if (tOption) {
-		if (args[2] == NULL || (sleep_time = atoi(args[2])) < 0) {
-			add_usage();
-			return;
-		}
-		if (sleep_time == 0) {
-			if (args[2][0] >= 'a' && args[2][0] <= 'z' ||
-					args[2][0] >= 'A' && args[2][0] <= 'Z') {
+		char tmp[STRMAX];
+		strcpy(tmp, args[2]);
+		char *p = tmp;
+		while (*p != '\0') {
+			if (!isdigit(*p)) {
+				// 숫자가 아닌 문자 발견	
 				add_usage();
-				return;
+				return ;  
 			}
+			p++;
 		}
+		sleep_time = atoi(args[2]);
 	}
 
-	int find = find_pattern(monitor_list_path, path);
+	int find = find_path(monitor_list_path, path);
 	if (find == 1) {
 		fprintf(stderr, "%s cannot be monitored\n", path);
 		return;
@@ -338,6 +344,7 @@ void add(char **args) {
 	} else if (daemon_pid == 0) {
 		create_daemon(path, log_path, sleep_time);
 	} else {
+		// monitor_list.txt에 한 줄 추가
 		char tmp[PATHMAX];
 		if (snprintf(tmp, sizeof(tmp), "%s %d\n", path, daemon_pid) > sizeof(tmp)) {
 			fprintf(stderr, "tmp over PATHMAX\n");
@@ -349,15 +356,43 @@ void add(char **args) {
 }
 
 void delete(char *pid) {
-	int find = find_pattern(monitor_list_path, pid);
+	int find = find_pid(monitor_list_path, pid);
 
 	if (find == 1) {
-		delete_line(monitor_list_path, pid);
+		delete_line_by_pid(monitor_list_path, pid);
 	}
 	else {
-		fprintf(stderr, "%s not exists in %s\n", pid, "monitor_list_path");
+		fprintf(stderr, "%s not exists in %s\n", pid, monitor_list_path);
 		return;
 	}
+}
+
+void tree(char **args) {
+	struct stat sb;
+	char path[PATHMAX];
+	if (ConvertPath(args[0], path) != 0) {
+		fprintf(stderr, "invalid path %s\n", path);
+		return;
+	}
+
+	if (stat(path, &sb) < 0) {
+		fprintf(stderr, "%s not exists\n", path);
+		return;
+	}
+
+	if (!S_ISDIR(sb.st_mode)) {
+		fprintf(stderr, "%s not DIR\n", path);
+		return;
+	}
+
+	if (access(path, F_OK) < 0) {
+		fprintf(stderr, "%s not exists\n", path);
+		return;
+	}
+
+	printf("%s\n", args[0]);
+	print_tree(path, 0);
+
 }
 
 void add_usage() {
@@ -379,7 +414,7 @@ void append_line(char *path, char *str) {
 	fclose(fp);
 }
 
-int find_pattern(char *path, char *pattern) {
+int find_pid(char *path, char *pattern) {
 	FILE *fp;
 
 	if ((fp = fopen(path, "a+")) == NULL) {
@@ -388,15 +423,39 @@ int find_pattern(char *path, char *pattern) {
 	}
 
 	char line[STRMAX];
-	while (fgets(line, STRMAX, fp) != NULL) {
-		if (strstr(line, pattern) != NULL) {
+	char pid[STRMAX];
+
+	while (fscanf(fp, "%s %s\n", line, pid) != EOF) {
+		if (!strcmp(pattern, pid))
 			return 1;
-		}
 	}
+
 	return 0;
 }
 
-void delete_line(char *path, char *pattern) {
+/* add() 에서 호출됨 */
+/* monitor_list.txt에서 인자로 들어온 경로가 있는지 검사 */
+/* return 1 : 발견함, 0 : 발견 못함 */
+int find_path(char *path, char *pattern) {
+	FILE *fp;
+
+	if ((fp = fopen(path, "a+")) == NULL) {
+		fprintf(stderr, "fopen error for %s\n", path);
+		exit(1);
+	}
+
+	char line[STRMAX];
+	char pid[STRMAX];
+
+	while (fscanf(fp, "%s %s\n", line, pid) != EOF) {
+		if (is_include_path(line, pattern))
+			return 1;
+	}
+
+	return 0;
+}
+
+void delete_line_by_pid(char *path, char *pattern) {
 	FILE *fp, *fp_tmp;
 
 	if ((fp = fopen(path, "a+")) == NULL) {
@@ -409,11 +468,12 @@ void delete_line(char *path, char *pattern) {
 	}
 
 	char line[STRMAX];
-	while (fgets(line, STRMAX, fp) != NULL) {
-		if (strstr(line, pattern) != NULL) {
+	char pid[STRMAX];
+
+	while (fscanf(fp, "%s %s\n", line, pid) != EOF) {
+		if (!strcmp(pid, pattern))
 			continue;
-		}
-		fprintf(fp_tmp, "%s", line);
+		fprintf(fp_tmp, "%s %s\n", line, pid);
 	}
 
 	fclose(fp_tmp);
@@ -421,4 +481,41 @@ void delete_line(char *path, char *pattern) {
 
 	remove(path);
 	rename("tmpfile", path);
+}
+
+void print_tree(char *dir, int depth) {
+	struct stat sb;
+	struct dirent** namelist;
+	int count;
+
+	// 디렉토리 경로 설정
+	const char* dir_path = dir;
+
+	// 디렉토리 스캔
+	count = scandir(dir_path, &namelist, NULL, alphasort);
+
+	// 파일 목록 출력
+	for (int i = 0; i < count; i++) {
+		if (!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, ".."))
+			continue;
+		if (lstat(namelist[i]->d_name, &sb) < 0) {
+			fprintf(stderr, "lstat error for %s\n", namelist[i]->d_name);
+			return;
+		}
+
+		if (S_ISDIR(sb.st_mode)) {
+			for (int i = 0; i < depth; i ++) 
+				printf("    ");
+			printf("----%s\n", namelist[i]->d_name);
+			print_tree(namelist[i]->d_name, depth + 1);
+		}
+		else if (S_ISREG(sb.st_mode)) {
+			for (int i = 0; i < depth; i ++) 
+				printf("    ");
+			printf("----%s\n", namelist[i]->d_name);
+		}
+		free(namelist[i]);
+	}
+
+	free(namelist);
 }
