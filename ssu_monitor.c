@@ -1,10 +1,15 @@
 #include "ssu_monitor.h"
 
+// status 0 : 생성, 2 : 수정, 3 : 삭제
+change_info change_list[1000];
+int change_idx;
+
 int main (int argc, char *argv[]) {
 
 	init();
 
 	prompt();
+//	debug(new_root);
 
 	exit(0);
 }
@@ -34,9 +39,31 @@ char *QuoteCheck(char **str, char del) {
 }
 
 void create_daemon(char *path, char *log_path, int sleep_time) {
+
+	daemon_setting();
+
+	node *old_root = create_tree(path);
+
+	while (1) {
+		node *new_root= create_tree(path);
+
+		change_idx = 0;
+		memset(change_list, 0, sizeof(change_info) * 1000);
+		compare_tree(old_root, new_root);  // 수정되었거나 그대로인 파일 체크
+		check_changes(new_root);
+		print_changes(log_path);
+
+		free_tree(old_root);
+		old_root = new_root;
+
+		sleep(sleep_time);
+	}
+
+}
+
+void daemon_setting() {
 	pid_t pid;
 	int fd, maxfd;
-
 	setsid();
 	signal(SIGTTIN, SIG_IGN);
 	signal(SIGTTOU, SIG_IGN);
@@ -49,17 +76,6 @@ void create_daemon(char *path, char *log_path, int sleep_time) {
 	fd = open("/dev/null", O_RDWR);
 	dup(0);
 	dup(0);
-
-	/*
-	   while (1) {
-
-
-	   sleep(sleep_time);
-	   }*/
-
-	append_line(log_path, "from daemon hello\n");
-
-	exit(0);
 }
 
 // Util
@@ -204,7 +220,7 @@ int is_include_path(char *path1, char *path2) {
 
 // ssu_monitor 관련 함수
 void prompt() {
-	char input[STRMAX];
+	char input[PATHMAX];
 	int argcnt = 0;
 	char **arglist = NULL;
 	int command;
@@ -212,7 +228,7 @@ void prompt() {
 
 	while (true) {
 		printf("%d> ", STD_ID);
-		fgets(input, STRMAX, stdin);
+		fgets(input, PATHMAX, stdin);
 		input[strlen(input)-1] = '\0';
 
 		if ((arglist = GetSubstring(input, &argcnt, " \t")) == NULL)
@@ -266,6 +282,9 @@ void init() {
 		}
 	}
 
+	memset(change_list, 0, sizeof(change_info) * 1000);
+	change_idx = 0;
+
 }
 
 // args[0] : path
@@ -301,7 +320,7 @@ void add(int argc, char **args) {
 		tOption = true;
 
 	if (tOption) {
-		char tmp[STRMAX];
+		char tmp[PATHMAX];
 		strcpy(tmp, args[2]);
 		char *p = tmp;
 		while (*p != '\0') {
@@ -410,7 +429,9 @@ void append_line(char *path, char *str) {
 		exit(1);
 	}
 
+	fseek(fp, 0, SEEK_END);
 	fprintf(fp, "%s", str);
+
 	fclose(fp);
 }
 
@@ -422,8 +443,8 @@ int find_pid(char *path, char *pattern) {
 		exit(1);
 	}
 
-	char line[STRMAX];
-	char pid[STRMAX];
+	char line[PATHMAX];
+	char pid[PATHMAX];
 
 	while (fscanf(fp, "%s %s\n", line, pid) != EOF) {
 		if (!strcmp(pattern, pid))
@@ -444,8 +465,8 @@ int find_path(char *path, char *pattern) {
 		exit(1);
 	}
 
-	char line[STRMAX];
-	char pid[STRMAX];
+	char line[PATHMAX];
+	char pid[PATHMAX];
 
 	while (fscanf(fp, "%s %s\n", line, pid) != EOF) {
 		if (is_include_path(line, pattern))
@@ -467,8 +488,8 @@ void delete_line_by_pid(char *path, char *pattern) {
 		exit(1);
 	}
 
-	char line[STRMAX];
-	char pid[STRMAX];
+	char line[PATHMAX];
+	char pid[PATHMAX];
 
 	while (fscanf(fp, "%s %s\n", line, pid) != EOF) {
 		if (!strcmp(pid, pattern))
@@ -518,4 +539,177 @@ void print_tree(char *dir, int depth) {
 	}
 
 	free(namelist);
+}
+
+node *create_node() {
+	node *new_node = (node *)calloc(sizeof(node), 1);
+
+	memset(new_node->path, 0, PATHMAX);
+	new_node->next = NULL;
+	new_node->child = NULL;
+	new_node->status = 0;
+	new_node->is_dir = 0;
+
+	return new_node;
+}
+
+node *create_tree(char *path) {
+	node *parent = (node *)calloc(sizeof(node), 1);
+
+	strcpy(parent->path, path);
+	if (lstat(path, &(parent->sb)) < 0) {
+		fprintf(stderr, "lstat error for %s\n", path);
+		return NULL;
+	}
+	parent->is_dir = 1;
+
+	node *cur = parent;  // 마지막에 추가된 노드
+
+	struct dirent** namelist;
+	int count;
+
+	count = scandir(path, &namelist, NULL, alphasort);
+
+	for (int i = 0; i < count; i++) {
+		if (!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, "..")
+				|| !strcmp(namelist[i]->d_name, "log.txt"))
+			continue;
+
+		node *new= (node *)calloc(sizeof(node), 1);
+		sprintf(new->path, "%s/%s", path, namelist[i]->d_name);
+
+		if (lstat(new->path, &(new->sb)) < 0) {
+			free(new);
+			continue;
+		}
+
+		if (S_ISDIR(new->sb.st_mode)) {
+			new = create_tree(new->path);
+		}
+
+		if (parent->child == NULL) {
+			parent->child = new;
+			cur = new;
+		} else {
+			cur->next = new;
+			cur = new;
+		}
+	}
+	return parent;
+}
+
+int check_node(node *old, node *new) {
+	if (new == NULL)
+		return 0;
+
+	// old와 new가 같은 파일이라면
+	if (!strcmp(old->path, new->path)) {
+		if (old->sb.st_mtime != new->sb.st_mtime)  // 수정 시간이 다르면
+			new->status = 2;  // 수정됨(2)
+		else
+			new->status = 1;  // 확인완료(1)
+		return 1;
+	}
+
+	if (check_node(old, new->child))
+		return 1;
+	if (check_node(old, new->next))
+		return 1;
+
+	return 0;
+}
+
+void free_tree(node *root) {
+	if (root->child != NULL)
+		free_tree(root->child);
+	if (root->next != NULL)
+		free_tree(root->next);
+
+	free(root);
+}
+
+void compare_tree(node *old, node *new) {
+	if (old == NULL)
+		return;
+
+	int removed = check_node(old, new);
+	if (!removed) {
+		printf("%s removed\n", old->path);
+		change_list[change_idx].time = time(NULL);
+		strcpy(change_list[change_idx].path, old->path);
+		strcpy(change_list[change_idx++].change, "remove");
+	}
+
+	if (old->child != NULL)
+		compare_tree(old->child, new);
+	if (old->next != NULL)
+		compare_tree(old->next, new);
+
+}
+
+void debug(node *root) {
+	printf("%s %d %d\n", root->path, root->is_dir, root->status);
+	if (root->child != NULL)
+		debug(root->child);
+	if (root->next != NULL)
+		debug(root->next);
+}
+
+void check_changes(node *cur) {
+
+	if (!cur->is_dir) {
+		if (cur->status == 0) {
+			printf("%s created\n", cur->path);
+			change_list[change_idx].time = cur->sb.st_mtime;
+			strcpy(change_list[change_idx].path, cur->path);
+			strcpy(change_list[change_idx++].change, "create");
+		}
+		else if (cur->status == 2) {
+			printf("%s modified\n", cur->path);
+			change_list[change_idx].time = cur->sb.st_mtime;
+			strcpy(change_list[change_idx].path, cur->path);
+			strcpy(change_list[change_idx++].change, "modify");
+		}
+	}
+
+	if (cur->child != NULL)
+		check_changes(cur->child);
+	if (cur->next != NULL)
+		check_changes(cur->next);
+
+}
+
+void print_changes(char *log_path) {
+	sort_list();
+
+	for (int i=0; i < change_idx; i++) {
+		change_info info = change_list[i];
+		char tmp[PATHMAX];
+		if (snprintf(tmp, sizeof(tmp), "[%s][%s][%s]\n", get_time(info.time), info.change, info.path) > sizeof(tmp)) {
+			return;
+		}
+
+		append_line(log_path, tmp);
+	}
+}
+
+char *get_time(time_t time) {
+	static char buf[100] = {0};
+	struct tm *tm = localtime(&time);
+	strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", tm);
+
+	return buf;
+}
+
+void sort_list() {
+	change_info temp;
+	for (int i=0; i < change_idx; i++) {
+		for (int j=i+1; j < change_idx; j++) {
+			if (change_list[i].time > change_list[j].time) {
+				temp = change_list[i];
+				change_list[i] = change_list[j];
+				change_list[j] = temp;
+			}
+		}
+	}
 }

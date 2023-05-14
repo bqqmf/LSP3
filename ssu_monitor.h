@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <time.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <dirent.h>
@@ -34,6 +35,21 @@ typedef struct command_parameter {
 	char *argv[10];
 } command_parameter;
 
+typedef struct node {
+	char path[PATHMAX];
+	struct stat sb;
+	struct node *next;
+	struct node *child;
+	int status;
+	int is_dir;
+} node;
+
+typedef struct change_info {
+	time_t time;
+	char path[PATHMAX];
+	char change[10];
+} change_info;
+
 void init();
 void prompt();
 void add(int argc, char **args);
@@ -44,6 +60,7 @@ void add_usage();
 void help();
 
 void create_daemon();
+void daemon_setting();
 
 char *QuoteCheck(char **str, char del);
 char *Tokenize(char *str, char *del);
@@ -57,3 +74,14 @@ int find_pid(char *path, char *pattern);
 int find_path(char *path, char *pattern);
 void delete_line_by_pid(char *path, char *pattern);
 void print_tree(char *dir, int depth);
+
+node *create_node();
+node *create_tree(char *path);
+int check_node(node *old, node *new);
+void free_tree(node *root);
+void compare_tree(node *, node*);
+void check_changes(node *);
+void print_changes();
+char *get_time(time_t);
+void sort_list();
+void debug(node *);

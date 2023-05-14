@@ -1,13 +1,2 @@
-from daemon hello
-from daemon hello
-from daemon hello
-from daemon hello
-from daemon hello
-from daemon hello
-from daemon hello
-from daemon hello
-from daemon hello
-from daemon hello
-from daemon hello
-from daemon hello
-from daemon hello
+[2023-05-15 01:37:02][modify][/home/wjdghks728/Desktop/LSP3/hello/asd.txt]
+[2023-05-15 01:37:22][remove][/home/wjdghks728/Desktop/LSP3/hello/a]
