@@ -523,9 +523,17 @@ void print_tree(char *dir, int depth) {
 	for (int i = 0; i < count; i++) {
 		if (!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, ".."))
 			continue;
-		if (lstat(namelist[i]->d_name, &sb) < 0) {
+
+		char fullpath[PATHMAX];
+		if (snprintf(fullpath, sizeof(fullpath), "%s/%s", dir, namelist[i]->d_name) > 
+				sizeof(fullpath)) {
+			fprintf(stderr, "snprintf error\n");
+			continue;
+		}
+
+		if (lstat(fullpath, &sb) < 0) {
 			fprintf(stderr, "lstat error for %s\n", namelist[i]->d_name);
-			return;
+			continue;
 		}
 
 		if (S_ISDIR(sb.st_mode)) {
