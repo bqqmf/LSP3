@@ -9,7 +9,7 @@ int main (int argc, char *argv[]) {
 	init();
 
 	prompt();
-//	debug(new_root);
+	//	debug(new_root);
 
 	exit(0);
 }
@@ -357,21 +357,46 @@ void add(int argc, char **args) {
 
 	printf("monitoring started (%s), %d\n", path, sleep_time);
 
+	/*
 	// 데몬 생성
 	pid_t daemon_pid;
 	if ((daemon_pid = fork()) < 0) {
-		fprintf(stderr, "fork error\n");
+	fprintf(stderr, "fork error\n");
 	} else if (daemon_pid == 0) {
-		create_daemon(path, log_path, sleep_time);
+	create_daemon(path, log_path, sleep_time);
 	} else {
-		// monitor_list.txt에 한 줄 추가
-		char tmp[PATHMAX];
-		if (snprintf(tmp, sizeof(tmp), "%s %d\n", path, daemon_pid) > sizeof(tmp)) {
-			fprintf(stderr, "tmp over PATHMAX\n");
-			return;
-		}
-		append_line(monitor_list_path, tmp);
+	// monitor_list.txt에 한 줄 추가
+	char tmp[PATHMAX];
+	if (snprintf(tmp, sizeof(tmp), "%s %d\n", path, daemon_pid) > sizeof(tmp)) {
+	fprintf(stderr, "tmp over PATHMAX\n");
+	return;
 	}
+	append_line(monitor_list_path, tmp);
+	}
+	 */
+	// 데몬 생성
+	pid_t daemon_pid;
+	pid_t tmp_pid;
+	if ((tmp_pid = fork()) < 0) {
+		fprintf(stderr, "fork error\n");
+		return;
+	} else if (tmp_pid == 0) {
+		if ((daemon_pid = fork()) < 0) {
+			fprintf(stderr, "fork error\n");
+			return;
+		} else if (daemon_pid == 0) {
+			create_daemon(path, log_path, sleep_time);
+		} else {
+			// monitor_list.txt에 한 줄 추가
+			char tmp[PATHMAX];
+			if (snprintf(tmp, sizeof(tmp), "%s %d\n", path, daemon_pid) > sizeof(tmp)) {
+				fprintf(stderr, "tmp over PATHMAX\n");
+				return;
+			}
+			append_line(monitor_list_path, tmp);
+			exit(0);
+		}
+	} 
 
 }
 
