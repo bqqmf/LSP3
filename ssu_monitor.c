@@ -256,11 +256,11 @@ void prompt() {
 			}
 			tree(arglist + 1);
 		} else if (!strcmp(arglist[0], commanddata[3])) {
-			// help 
+			help();	
 		} else if (!strcmp(arglist[0], commanddata[4])) {
-			// exit
+			exit(0);
 		} else {
-			// help
+			help();	
 		}
 
 
@@ -419,7 +419,11 @@ void add_usage() {
 	printf("add <DIRPATH> [OPTION] <TIME>\n");
 }
 void help() {
+	printf("add <DIRPATH> [OPTION]\n");
+	printf("delete <DAEMON_PID>\n");
+	printf("tree <DIRPATH>\n");
 	printf("help\n");
+	printf("exit\n");
 }
 
 void append_line(char *path, char *str) {
