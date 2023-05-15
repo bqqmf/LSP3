@@ -76,6 +76,7 @@ void daemon_setting() {
 	fd = open("/dev/null", O_RDWR);
 	dup(0);
 	dup(0);
+	signal(SIGUSR1, handler);
 }
 
 // Util
@@ -492,8 +493,12 @@ void delete_line_by_pid(char *path, char *pattern) {
 	char pid[PATHMAX];
 
 	while (fscanf(fp, "%s %s\n", line, pid) != EOF) {
-		if (!strcmp(pid, pattern))
+		if (!strcmp(pid, pattern)) {
+			printf("monitoring ended (%s)\n", line);
+			//kill(atoi(pid), SIGUSR1);  // send SIGUSR1 to pid
+			printf("send SIGUSR1 to %d\n", atoi(pid));
 			continue;
+		}
 		fprintf(fp_tmp, "%s %s\n", line, pid);
 	}
 
@@ -712,4 +717,8 @@ void sort_list() {
 			}
 		}
 	}
+}
+
+void handler(int signo) {
+	exit(0);
 }

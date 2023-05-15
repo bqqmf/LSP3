@@ -61,6 +61,7 @@ void help();
 
 void create_daemon();
 void daemon_setting();
+void handler(int signo);
 
 char *QuoteCheck(char **str, char del);
 char *Tokenize(char *str, char *del);
