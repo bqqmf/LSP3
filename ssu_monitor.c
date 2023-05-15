@@ -495,8 +495,7 @@ void delete_line_by_pid(char *path, char *pattern) {
 	while (fscanf(fp, "%s %s\n", line, pid) != EOF) {
 		if (!strcmp(pid, pattern)) {
 			printf("monitoring ended (%s)\n", line);
-			//kill(atoi(pid), SIGUSR1);  // send SIGUSR1 to pid
-			printf("send SIGUSR1 to %d\n", atoi(pid));
+			kill(atoi(pid), SIGUSR1);  // send SIGUSR1 to pid
 			continue;
 		}
 		fprintf(fp_tmp, "%s %s\n", line, pid);

@@ -7,3 +7,6 @@
 [2023-05-15 21:04:28][create][/home/wjdghks728/Desktop/LSP3/hello/.yy.txt.swp]
 [2023-05-15 21:04:29][remove][/home/wjdghks728/Desktop/LSP3/hello/.yy.txt.swp]
 [2023-05-15 21:04:29][create][/home/wjdghks728/Desktop/LSP3/hello/yy.txt]
+[2023-05-15 21:24:20][create][/home/wjdghks728/Desktop/LSP3/hello/.test.txt.swp]
+[2023-05-15 21:24:21][remove][/home/wjdghks728/Desktop/LSP3/hello/.test.txt.swp]
+[2023-05-15 21:24:21][modify][/home/wjdghks728/Desktop/LSP3/hello/test.txt]
