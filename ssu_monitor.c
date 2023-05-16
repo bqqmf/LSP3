@@ -563,7 +563,7 @@ void print_tree(char *dir, int depth) {
 			for (int i = 0; i < depth; i ++) 
 				printf("    ");
 			printf("----%s\n", namelist[i]->d_name);
-			print_tree(namelist[i]->d_name, depth + 1);
+			print_tree(fullpath, depth + 1);
 		}
 		else if (S_ISREG(sb.st_mode)) {
 			for (int i = 0; i < depth; i ++) 
