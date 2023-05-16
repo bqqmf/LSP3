@@ -661,7 +661,6 @@ void compare_tree(node *old, node *new) {
 
 	int removed = check_node(old, new);
 	if (!removed) {
-		printf("%s removed\n", old->path);
 		change_list[change_idx].time = time(NULL);
 		strcpy(change_list[change_idx].path, old->path);
 		strcpy(change_list[change_idx++].change, "remove");
@@ -678,13 +677,11 @@ void check_changes(node *cur) {
 
 	if (!cur->is_dir) {
 		if (cur->status == 0) {
-			printf("%s created\n", cur->path);
 			change_list[change_idx].time = cur->sb.st_mtime;
 			strcpy(change_list[change_idx].path, cur->path);
 			strcpy(change_list[change_idx++].change, "create");
 		}
 		else if (cur->status == 2) {
-			printf("%s modified\n", cur->path);
 			change_list[change_idx].time = cur->sb.st_mtime;
 			strcpy(change_list[change_idx].path, cur->path);
 			strcpy(change_list[change_idx++].change, "modify");
