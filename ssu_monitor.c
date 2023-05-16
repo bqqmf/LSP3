@@ -302,16 +302,19 @@ void add(int argc, char **args) {
 	}
 
 	if (stat(path, &sb) < 0) {
+		add_usage();
 		fprintf(stderr, "%s not exists\n", path);
 		return;
 	}
 
 	if (!S_ISDIR(sb.st_mode)) {
+		add_usage();
 		fprintf(stderr, "%s not DIR\n", path);
 		return;
 	}
 
 	if (access(path, F_OK) < 0) {
+		add_usage();
 		fprintf(stderr, "%s not exists\n", path);
 		return;
 	}
@@ -421,8 +424,13 @@ void tree(char **args) {
 		return;
 	}
 
-	printf("%s\n", args[0]);
-	print_tree(path, 0);
+	// args[0]을 절대 경로로 변환한 경로가 monitor에 존재하는지 검사
+	if (find_path(monitor_list_path, path)) {
+		printf("%s\n", args[0]);
+		print_tree(path, 0);
+	} else { 
+		fprintf(stderr, "%s not exists in monitor_list.txt\n", path);
+	}
 
 }
 

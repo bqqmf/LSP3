@@ -13,3 +13,5 @@
 [2023-05-16 23:40:20][create][/home/wjdghks728/Desktop/LSP3/hello/.qwer.txt.swp]
 [2023-05-16 23:40:21][modify][/home/wjdghks728/Desktop/LSP3/hello/qwer.txt]
 [2023-05-16 23:40:22][remove][/home/wjdghks728/Desktop/LSP3/hello/.qwer.txt.swp]
+[2023-05-17 00:43:49][modify][/home/wjdghks728/Desktop/LSP3/hello/qwer.txt]
+[2023-05-17 00:44:23][modify][/home/wjdghks728/Desktop/LSP3/hello/test.txt]
