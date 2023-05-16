@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <fcntl.h>
 #include <dirent.h>
 #include <signal.h>
@@ -85,4 +86,3 @@ void check_changes(node *);
 void print_changes();
 char *get_time(time_t);
 void sort_list();
-void debug(node *);

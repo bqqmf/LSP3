@@ -5,3 +5,6 @@ from daemon hello
 from daemon hello
 from daemon hello
 from daemon hello
+[2023-05-16 23:39:49][create][/home/wjdghks728/Desktop/LSP3/aaaa/.qwer.txt.swp]
+[2023-05-16 23:39:50][remove][/home/wjdghks728/Desktop/LSP3/aaaa/.qwer.txt.swp]
+[2023-05-16 23:39:50][create][/home/wjdghks728/Desktop/LSP3/aaaa/qwer.txt]

@@ -9,7 +9,6 @@ int main (int argc, char *argv[]) {
 	init();
 
 	prompt();
-	//	debug(new_root);
 
 	exit(0);
 }
@@ -355,25 +354,8 @@ void add(int argc, char **args) {
 		}
 	}
 
-	printf("monitoring started (%s), %d\n", path, sleep_time);
+	printf("monitoring started (%s)\n", path);
 
-	/*
-	// 데몬 생성
-	pid_t daemon_pid;
-	if ((daemon_pid = fork()) < 0) {
-	fprintf(stderr, "fork error\n");
-	} else if (daemon_pid == 0) {
-	create_daemon(path, log_path, sleep_time);
-	} else {
-	// monitor_list.txt에 한 줄 추가
-	char tmp[PATHMAX];
-	if (snprintf(tmp, sizeof(tmp), "%s %d\n", path, daemon_pid) > sizeof(tmp)) {
-	fprintf(stderr, "tmp over PATHMAX\n");
-	return;
-	}
-	append_line(monitor_list_path, tmp);
-	}
-	 */
 	// 데몬 생성
 	pid_t daemon_pid;
 	pid_t tmp_pid;
@@ -394,9 +376,13 @@ void add(int argc, char **args) {
 				return;
 			}
 			append_line(monitor_list_path, tmp);
+			signal(SIGUSR1, handler);
 			exit(0);
 		}
-	} 
+	} else {
+		wait((int *) 0);
+		kill(tmp_pid, SIGUSR1);
+	}
 
 }
 
@@ -686,14 +672,6 @@ void compare_tree(node *old, node *new) {
 	if (old->next != NULL)
 		compare_tree(old->next, new);
 
-}
-
-void debug(node *root) {
-	printf("%s %d %d\n", root->path, root->is_dir, root->status);
-	if (root->child != NULL)
-		debug(root->child);
-	if (root->next != NULL)
-		debug(root->next);
 }
 
 void check_changes(node *cur) {
