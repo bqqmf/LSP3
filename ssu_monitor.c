@@ -607,7 +607,8 @@ node *create_tree(char *path) {
 
 	for (int i = 0; i < count; i++) {
 		if (!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, "..")
-				|| !strcmp(namelist[i]->d_name, "log.txt"))
+				|| !strcmp(namelist[i]->d_name, "log.txt")
+				|| !strcmp(namelist[i]->d_name, monitor_list_path))
 			continue;
 
 		node *new= (node *)calloc(sizeof(node), 1);
